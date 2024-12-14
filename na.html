@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nazri - Password Quiz Music Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            backdrop-filter: blur(10px);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .icon {
+            width: 50px;
+            height: 50px;
+            transition: transform 0.3s;
+        }
+        .icon:hover {
+            transform: scale(1.1);
+        }
+        .track-progress {
+            height: 5px;
+            background: #1db954;
+            border-radius: 5px;
+            transition: width 0.1s;
+        }
+        /* Custom styles for inputs and buttons */
+        .input-field {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 10px;
+            padding: 10px;
+            color: white;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .input-field:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .button {
+            background: linear-gradient(90deg, #1db954, #1ed760);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+        }
+        .button:hover {
+            transform: scale(1.05);
+            background: linear-gradient(90deg, #1ed760, #1db954);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <!-- Password Screen -->
+    <div id="password-screen" class="text-center fade-in p-6 glass w-96">
+        <h1 class="text-4xl font-bold mb-6 text-white">ሰላም እድል የነገርኩሽን Password አስገቢ</h1>
+        <img src="https://img.icons8.com/ios-filled/100/ffffff/lock-2.png" alt="Lock Icon" class="icon mb-4" />
+        <input
+            id="password-input"
+            type="password"
+            placeholder="Enter Password"
+            class="input-field mb-4 w-full"
+        />
+        <button
+            onclick="checkPassword()"
+            class="button w-full"
+        >
+            Submit
+        </button>
+        <p id="password-error" class="text-red-500 mt-4 hidden">Incorrect password. Try again!</p>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-screen" class="hidden text-center fade-in p-6 glass w-96">
+        <h1 class="text-4xl font-bold mb-6 text-white">የአንቺነትሽ ማረጋገጫ😁!</h1>
+        <img src="https://img.icons8.com/ios-filled/100/ffffff/question-mark.png" alt="Quiz Icon" class="icon mb-4" />
+        <div id="question-container" class="space-y-6">
+            <!-- Questions will be dynamically added here -->
+        </div>
+        <audio id="alert-sound" src="1.mp3"></audio>
+    </div>
+
+    <!-- Music Player Screen -->
+    <div id="music-player-screen" class="hidden text-center fade-in p-6 glass w-96">
+        <h1 class="text-4xl font-bold mb-6 text-white">ብቻሽን ስሚዉ</h1>
+        <img src="me.png" alt="Album Art" class="mb-4 rounded-lg shadow-lg" />
+        <h2 class="text-2xl font-semibold mb-2 text-white">Sorry for all</h2>
+        <h3 class="text-lg text-gray-400 mb-4">Robi</h3>
+        
+        <div class="flex items-center justify-center mb-4">
+            <button class="bg-gray-600 p-2 rounded-full hover:bg-gray-500 transition duration-200">
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/previous.png" alt="Previous" class="icon" />
+            </button>
+            <button id="play-pause-button" class="button p-4 rounded-full mx-4">
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/play.png" alt="Play" class="icon" />
+            </button>
+            <button class="bg-gray-600 p-2 rounded-full hover:bg-gray-500 transition duration-200">
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/next.png" alt="Next" class="icon" />
+            </button>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
+            <div id="track-progress" class="track-progress" style="width: 0%;"></div>
+        </div>
+        <audio id="audio-player" class="hidden">
+            <source src="2.mp3" type="audio/mp3" />
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <script>
+        const passwordScreen = document.getElementById('password-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const musicPlayerScreen = document.getElementById('music-player-screen');
+        const passwordInput = document.getElementById('password-input');
+        const passwordError = document.getElementById('password-error');
+        const questionContainer = document.getElementById('question-container');
+        const playPauseButton = document.getElementById('play-pause-button');
+        const audioPlayer = document.getElementById('audio-player');
+        const trackProgress = document.getElementById('track-progress');
+        const alertSound = document.getElementById('alert-sound');
+
+        let isPlaying = false;
+
+        // Questions and Answers
+        const questions = [
+            {
+                question: "በጣም ምትወጂዉ ምግብ ምንድነው?",
+                options: ["Burger", "Pizza", "Pasta"],
+                correct: "Pizza",
+            },
+            {
+                question: "በጣም የምትጠይዉ fruit ምንድነው?",
+                options: ["Orange", "Apple", "Banana"],
+                correct: "Banana",
+            },
+            {
+                question: "የcomputer passwordish ምንድነው?",
+                options: ["NANASI1", "nanasi", "nazri"],
+                correct: "nanasi",
+            },
+        ];
+
+        let currentQuestionIndex = 0;
+
+        function checkPassword() {
+            if (passwordInput.value === "nanazi") {
+                transitionScreens(passwordScreen, quizScreen);
+                loadQuestion();
+            } else {
+                passwordError.classList.remove('hidden');
+            }
+        }
+
+        function loadQuestion() {
+            questionContainer.innerHTML = ""; // Clear previous question
+            const question = questions[currentQuestionIndex];
+            const questionTitle = document.createElement("h2");
+            questionTitle.textContent = question.question;
+            questionTitle.className = "text-xl font-semibold mb-4 text-white";
+
+            questionContainer.appendChild(questionTitle);
+
+            // Add options
+            question.options.forEach((option) => {
+                const button = document.createElement("button");
+                button.textContent = option;
+                button.className =
+                    "block button mb-2 w-full";
+                button.onclick = () => checkAnswer(option);
+                questionContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selected) {
+            const question = questions[currentQuestionIndex];
+            if (selected === question.correct) {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    loadQuestion();
+                } else {
+                    transitionScreens(quizScreen, musicPlayerScreen);
+                    setupAudioPlayer();
+                }
+            } else {
+                alertSound.play();
+                alert("አንቺ አይደለሽም😡");
+            }
+        }
+
+        function setupAudioPlayer() {
+    audioPlayer.classList.remove('hidden');
+    playPauseButton.innerHTML = '<img src="https://img.icons8.com/ios-filled/50/ffffff/play.png" alt="Play" class="icon" />';
+    audioPlayer.addEventListener('timeupdate', updateProgress);
+    playPauseButton.onclick = togglePlayPause;
+}
+
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                audioPlayer.pause();
+                playPauseButton.innerHTML = '<img src="https://img.icons8.com/ios-filled/50/ffffff/play.png" alt="Play" class="icon" />';
+            } else {
+                audioPlayer.play();
+                playPauseButton.innerHTML = '<img src="https://img.icons8.com/ios-filled/50/ffffff/pause.png" alt="Pause" class="icon" />';
+            }
+            isPlaying = !isPlaying;
+        }
+
+        function updateProgress() {
+            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            trackProgress.style.width = progress + '%';
+        }
+
+        function transitionScreens(currentScreen, nextScreen) {
+            currentScreen.classList.add('fade-out');
+            setTimeout(() => {
+                currentScreen.classList.add('hidden');
+                currentScreen.classList.remove('fade-out');
+                nextScreen.classList.remove('hidden');
+                nextScreen.classList.add('fade-in');
+            }, 500);
+        }
+    </script>
+</body>
+</html>
